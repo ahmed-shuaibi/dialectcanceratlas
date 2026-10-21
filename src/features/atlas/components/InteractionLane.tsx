@@ -53,10 +53,12 @@ export function InteractionLane({
   highlightLikelyPassengers,
   onSelect,
   total,
+  significantOnly = false,
 }: {
   direction: Direction;
   results: InteractionResult[];
   total?: number;
+  significantOnly?: boolean;
   mode: AtlasMode;
   qThreshold: number;
   minIdentifiedBmrs: BmrCount;
@@ -71,7 +73,7 @@ export function InteractionLane({
   const shown = results.slice(0, visible);
   return (
     <section aria-labelledby={`${direction}-heading`} className="surface-card min-w-0 overflow-hidden">
-      <header className="flex items-end justify-between gap-4 border-b border-line px-5 py-5">
+      <header className="flex flex-wrap items-end justify-between gap-2 border-b border-line px-5 py-5">
         <div>
           <h2
             id={`${direction}-heading`}
@@ -83,8 +85,8 @@ export function InteractionLane({
         </div>
         <p className="shrink-0 font-mono text-sm text-muted">
           {total != null && total > results.length
-            ? `${fmtInt(results.length)} of ${fmtInt(total)} pairs`
-            : `${fmtInt(results.length)} ${results.length === 1 ? "pair" : "pairs"}`}
+            ? `${fmtInt(results.length)} shown / ${fmtInt(total)} ${significantOnly ? "significant" : "ranked"}`
+            : `${fmtInt(results.length)} ${significantOnly ? "significant" : "ranked"} ${results.length === 1 ? "pair" : "pairs"}`}
         </p>
       </header>
 

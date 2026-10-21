@@ -8,7 +8,6 @@ import { ResultsToolbar } from "@/features/atlas/components/ResultsToolbar";
 import { resultsForNetwork } from "@/features/atlas/components/explore-display";
 import { isRevisionRelease, qCutoffLabel } from "@/features/atlas/lib/atlas-metadata";
 import { exploreResults, filterResultsByGene, fmtInt } from "@/features/atlas/lib/atlas-transform";
-import { MATERIALIZED_CAP } from "@/features/atlas/lib/columnar";
 import type {
   AtlasMode,
   BmrCount,
@@ -140,6 +139,12 @@ export function ExploreView({
     () => resultsForNetwork(visibleResults),
     [visibleResults],
   );
+  const unassigned = data.testedPairs != null && data.directionTotals && mode !== "consensus"
+    ? data.testedPairs - data.directionTotals[mode].ME - data.directionTotals[mode].CO
+    : null;
+  const significantCounts = useMemo(() => data.countDirectional && mode !== "consensus"
+    ? { ME: data.countDirectional(mode, "ME", qThreshold), CO: data.countDirectional(mode, "CO", qThreshold) }
+    : null, [data, mode, qThreshold]);
 
   return (
     <section aria-label="Interaction results">
@@ -177,14 +182,27 @@ export function ExploreView({
         customize={customize}
       />
 
-      {release && isRevisionRelease(release) && data.rankedPerDirection && (
-        <p className="mb-3 text-sm font-medium text-muted">
-          Lists show each direction's ranked head: every pair with {qCutoffLabel(release)} 0.05 and
-          at least the top {fmtInt(data.rankedPerDirection)}, up to {fmtInt(MATERIALIZED_CAP)} per
-          background, of {fmtInt(data.testedPairs ?? 0)} tested. Every pair is in the downloadable
-          release.
+      <div className="mb-4 rounded-2xl border border-line bg-paper px-5 py-4" aria-label="Result scope">
+        <p className="font-semibold">
+          {significantOnly
+            ? `Significant pairs only · ${release ? qCutoffLabel(release) : "q <"} ${qThreshold}`
+            : "Ranked pairs · includes non-significant results"}
         </p>
-      )}
+        {!significantOnly && (
+          <p className="mt-1 text-sm text-muted">
+            {significantCounts
+              ? `Significant at ${release ? qCutoffLabel(release) : "q <"} ${qThreshold}: ${fmtInt(significantCounts.ME)} ME, ${fmtInt(significantCounts.CO)} CO. Select “Significant only” to view them.`
+              : "The counts below are ranked pairs, not significant discoveries. Select “Significant only” to apply the q-value cutoff."}
+          </p>
+        )}
+        {release && isRevisionRelease(release) && data.testedPairs != null && (
+          <p className="mt-1 text-sm text-muted">
+            {fmtInt(data.testedPairs)} pairs tested.
+            {unassigned != null && unassigned > 0 && ` ${fmtInt(unassigned)} have no defined ME/CO direction.`}
+            {" "}The full tested set is in the downloadable release.
+          </p>
+        )}
+      </div>
 
       {visibleResults.length === 0 ? (
         <EmptyExplore
@@ -226,6 +244,7 @@ export function ExploreView({
           <InteractionList
             results={visibleResults}
             totals={totals}
+            significantOnly={significantOnly}
             mode={mode}
             qThreshold={qThreshold}
             minIdentifiedBmrs={minIdentifiedBmrs}

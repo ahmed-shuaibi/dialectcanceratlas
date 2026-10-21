@@ -10,6 +10,7 @@ import { ContactView } from "@/features/atlas/components/ContactView";
 import { InitialCohortChooser } from "@/features/atlas/components/CohortChooser";
 import { ExploreView, ResultsSkeleton } from "@/features/atlas/components/ExploreView";
 import { PairDialog } from "@/features/atlas/components/PairDialog";
+import { ReleaseNotice } from "@/features/atlas/components/ReleaseNotice";
 import { SettingsDrawer } from "@/features/atlas/components/SettingsDrawer";
 import { useCohort, useRelease } from "@/features/atlas/hooks/useAtlas";
 import {
@@ -162,6 +163,7 @@ export function App() {
   return (
     <div className="min-h-screen">
       <SiteNav state={url} />
+      <ReleaseNotice release={releaseEntry} onReleaseChange={chooseRelease} />
 
       {url.view === "contact" && (
         <main id="main" tabIndex={-1} className="site-shell outline-none">

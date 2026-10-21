@@ -30,6 +30,21 @@ function result(index: number): InteractionResult {
 }
 
 describe("InteractionList", () => {
+  it("labels ranked totals separately from significant counts", () => {
+    const props = {
+      results: [result(0), result(1)], mode: "cbase" as const, qThreshold: 0.01,
+      minIdentifiedBmrs: 3 as const, minSignificantBmrs: 3 as const,
+      likelyPassengers: new Set<string>(), highlightLikelyPassengers: false,
+      onSelect: () => undefined,
+    };
+    const { rerender } = render(<InteractionList {...props} totals={{ ME: 63, CO: 271 }} />);
+    expect(screen.getByText("1 shown / 63 ranked")).toBeInTheDocument();
+    expect(screen.getByText("1 shown / 271 ranked")).toBeInTheDocument();
+    rerender(<InteractionList {...props} totals={{ ME: 1, CO: 1 }} significantOnly />);
+    expect(screen.getAllByText("1 significant pair")).toHaveLength(2);
+    expect(screen.queryByText(/ranked/)).not.toBeInTheDocument();
+  });
+
   it("shows both directions and progressively exposes the complete ranked set", async () => {
     const user = userEvent.setup();
     const results = Array.from({ length: 150 }, (_, index) => result(index));

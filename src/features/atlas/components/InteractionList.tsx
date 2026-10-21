@@ -12,10 +12,12 @@ export function InteractionList({
   highlightLikelyPassengers,
   onSelect,
   totals,
+  significantOnly = false,
 }: {
   results: InteractionResult[];
   /** Exact per-direction totals when the listed rows are a capped head (K=500). */
   totals?: Record<Direction, number>;
+  significantOnly?: boolean;
   mode: AtlasMode;
   qThreshold: number;
   minIdentifiedBmrs: BmrCount;
@@ -45,6 +47,7 @@ export function InteractionList({
           direction="ME"
           results={me}
           total={totals?.ME}
+          significantOnly={significantOnly}
           mode={mode}
           qThreshold={qThreshold}
           minIdentifiedBmrs={minIdentifiedBmrs}
@@ -57,6 +60,7 @@ export function InteractionList({
           direction="CO"
           results={co}
           total={totals?.CO}
+          significantOnly={significantOnly}
           mode={mode}
           qThreshold={qThreshold}
           minIdentifiedBmrs={minIdentifiedBmrs}

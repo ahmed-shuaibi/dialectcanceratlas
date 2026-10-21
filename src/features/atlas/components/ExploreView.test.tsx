@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ExploreView } from "@/features/atlas/components/ExploreView";
+import { defaultReleaseEntry } from "@/features/atlas/lib/release-catalog";
 import type { CohortData } from "@/features/atlas/types";
 
 const emptyData: CohortData = {
@@ -12,6 +13,25 @@ const emptyData: CohortData = {
 };
 
 describe("ExploreView", () => {
+  it("separates tested pairs, ranked pairs, and the active significance filter", () => {
+    const props = {
+      data: { ...emptyData, testedPairs: 124748, directionTotals: {
+        cbase: { ME: 0, CO: 0 }, dig: { ME: 0, CO: 0 }, mutsig: { ME: 63, CO: 271 },
+      } },
+      release: defaultReleaseEntry(), mode: "mutsig" as const, display: "list" as const,
+      qThreshold: 0.05, minIdentifiedBmrs: 3 as const, minSignificantBmrs: 3 as const,
+      significantOnly: false, onDisplayChange: vi.fn(), onSignificantOnlyChange: vi.fn(),
+      customize: null, likelyPassengers: new Set<string>(), highlightLikelyPassengers: false,
+      onSelect: vi.fn(),
+    };
+    const { rerender } = render(<ExploreView {...props} />);
+    expect(screen.getByText("Ranked pairs · includes non-significant results")).toBeInTheDocument();
+    expect(screen.getByText(/124,748 pairs tested/)).toHaveTextContent("124,414 have no defined ME/CO direction.");
+    rerender(<ExploreView {...props} significantOnly />);
+    expect(screen.getByText("Significant pairs only · BY q ≤ 0.05")).toBeInTheDocument();
+    expect(screen.queryByText(/The counts below are ranked pairs/)).not.toBeInTheDocument();
+  });
+
   it("offers one-step recovery when the significant-only filter has no results", () => {
     const onSignificantOnlyChange = vi.fn();
     render(
