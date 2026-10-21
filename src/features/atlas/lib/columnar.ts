@@ -48,10 +48,10 @@ export interface ColumnarCohortFile {
   n_samples: number;
   features: string[];
   drivers: string[];
-  pair_policy: { tested_pairs: number };
+  pair_policy: { tested_pairs: number; same_gene_pairs_included?: boolean };
   enums: { direction: string[]; identifiability: string[] };
   decision_thresholds: number[];
-  tables: Record<"pairs" | Bmr | "baselines", TableRecord>;
+  tables: Record<"pairs" | "baselines", TableRecord> & Partial<Record<Bmr, TableRecord>>;
   summaries: {
     models: Record<Bmr, { directions: Record<string, number> }>;
   };
@@ -141,12 +141,15 @@ export function decodeColumnarCohort(
   const table = (name: "pairs" | Bmr | "baselines", required: readonly string[]) => {
     const buffer = buffers[name];
     if (!buffer) throw new DataContractError(`${cohort.id}: missing ${name} table`);
-    const parsed = parseColumnTable(buffer, cohort.tables[name], required, `${cohort.id}/${name}`);
-    if (cohort.tables[name].rows !== rows) throw new DataContractError(`${cohort.id}/${name}: row count drift`);
+    const record = cohort.tables[name];
+    if (!record) throw new DataContractError(`${cohort.id}: missing ${name} record`);
+    const parsed = parseColumnTable(buffer, record, required, `${cohort.id}/${name}`);
+    if (record.rows !== rows) throw new DataContractError(`${cohort.id}/${name}: row count drift`);
     return parsed;
   };
   const pairs = table("pairs", PAIR_COLUMNS);
-  const models = Object.fromEntries(BMR_IDS.map((bmr) => [bmr, table(bmr, MODEL_COLUMNS)])) as Record<Bmr, ColumnTable>;
+  const availableBmrs = BMR_IDS.filter((bmr) => cohort.tables[bmr] != null);
+  const models = Object.fromEntries(availableBmrs.map((bmr) => [bmr, table(bmr, MODEL_COLUMNS)])) as Record<Bmr, ColumnTable>;
   const baselines = table("baselines", BASELINE_COLUMNS);
 
   const featureIndex = new Map(features.map((feature, index) => [feature, index]));
@@ -211,6 +214,7 @@ export function decodeColumnarCohort(
   };
   /** Exact directional row count, optionally restricted to calls at a q cutoff. */
   const countDirectional = (bmr: Bmr, direction: Direction, qThreshold: number | null) => {
+    if (!availableBmrs.includes(bmr)) return 0;
     const m = models[bmr];
     const code = directionCode(direction);
     const bit = qThreshold == null ? 0 : bitFor(qThreshold);
@@ -225,6 +229,10 @@ export function decodeColumnarCohort(
   // exactly ranks 1..S. Materialize that head (at least the ranked head), capped.
   const materializedPerDirection = {} as Record<Bmr, Record<Direction, number>>;
   const materialized = Object.fromEntries(BMR_IDS.map((bmr) => {
+    if (!availableBmrs.includes(bmr)) {
+      materializedPerDirection[bmr] = { ME: 0, CO: 0 };
+      return [bmr, []];
+    }
     const m = models[bmr];
     const limits = {
       ME: Math.min(MATERIALIZED_CAP, Math.max(RANKED_PER_DIRECTION, countDirectional(bmr, "ME", Q_THRESHOLDS[Q_THRESHOLDS.length - 1]))),
@@ -300,20 +308,21 @@ export function decodeColumnarCohort(
     let total = 0;
     for (let row = 0; row < rows; row += 1) {
       const called =
-        BMR_IDS.some((bmr) => models[bmr].direction[row] === code && (models[bmr].by_decisions[row] & bit) !== 0) ||
+        availableBmrs.some((bmr) => models[bmr].direction[row] === code && (models[bmr].by_decisions[row] & bit) !== 0) ||
         criteria.some(({ column, cutoff }) => column[row] < cutoff);
-      // Same-base pairs are never tested at K=500, so every row is comparable.
+      // Count each tested pair once, including same-gene M:N pairs when present.
       if (called) total += 1;
     }
     return total;
   };
 
   const directionTotals = Object.fromEntries(BMR_IDS.map((bmr) => {
-    const directions = cohort.summaries.models[bmr].directions;
+    const directions = cohort.summaries.models[bmr]?.directions ?? {};
     return [bmr, { ME: directions.ME ?? 0, CO: directions.CO ?? 0 } satisfies Record<Direction, number>];
   })) as Record<Bmr, Record<Direction, number>>;
 
   return {
+    includeSameGenePairs: cohort.pair_policy.same_gene_pairs_included === true,
     id: cohort.id,
     drivers: cohort.drivers,
     models: materialized,
@@ -329,7 +338,7 @@ export function decodeColumnarCohort(
     directionTotals,
     lookupPair: (bmr, ga, gb) => {
       const row = rowFor(ga, gb);
-      return row == null ? null : rowAt(bmr, row);
+      return row == null || !availableBmrs.includes(bmr) ? null : rowAt(bmr, row);
     },
     lookupBaseline: (ga, gb) => {
       const row = rowFor(ga, gb);
@@ -374,7 +383,7 @@ export function decodeColumnarCohortFile(value: unknown): ColumnarCohortFile {
   if (!isRecord(policy) || !isRecord(enums) || !isRecord(tables) || !isRecord(summaries) || !isRecord(summaries.models)) {
     throw new DataContractError(`${label}: missing pair_policy, enums, tables, or summaries`);
   }
-  const decodedTables = Object.fromEntries(TABLE_NAMES.map((name) => {
+  const decodedTables = Object.fromEntries(TABLE_NAMES.filter((name) => name === "pairs" || name === "baselines" || name in tables).map((name) => {
     const record = tables[name];
     if (!isRecord(record) || typeof record.file !== "string" || !Array.isArray(record.columns)) {
       throw new DataContractError(`${label}.tables.${name} is invalid`);
@@ -396,7 +405,8 @@ export function decodeColumnarCohortFile(value: unknown): ColumnarCohortFile {
     } satisfies TableRecord];
   })) as ColumnarCohortFile["tables"];
   const models = summaries.models;
-  for (const bmr of BMR_IDS) {
+  if (!BMR_IDS.some((bmr) => bmr in tables)) throw new DataContractError(`${label}: no backgrounds`);
+  for (const bmr of BMR_IDS.filter((name) => name in tables)) {
     const summary = models[bmr];
     if (!isRecord(summary) || !isRecord(summary.directions)) {
       throw new DataContractError(`${label}.summaries.models.${bmr} is invalid`);
@@ -408,7 +418,7 @@ export function decodeColumnarCohortFile(value: unknown): ColumnarCohortFile {
     n_samples: count(value.n_samples, `${label}.n_samples`),
     features,
     drivers: stringList(value.drivers ?? [], `${label}.drivers`),
-    pair_policy: { tested_pairs: count(policy.tested_pairs, `${label}.pair_policy.tested_pairs`) },
+    pair_policy: { tested_pairs: count(policy.tested_pairs, `${label}.pair_policy.tested_pairs`), same_gene_pairs_included: policy.same_gene_pairs_included === true },
     enums: {
       direction: stringList(enums.direction, `${label}.enums.direction`),
       identifiability: stringList(enums.identifiability, `${label}.enums.identifiability`),

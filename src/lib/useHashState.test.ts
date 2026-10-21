@@ -6,10 +6,10 @@ describe("Atlas hash state", () => {
     expect(parseAtlasHash("")).toEqual(URL_DEFAULTS);
     expect(parseAtlasHash("").cohort).toBeUndefined();
     expect(parseAtlasHash("")).toMatchObject({
-      release: "k500-2026-09-25",
+      release: "k500-2026-10-20",
       mode: "mutsig",
       exploreDisplay: "list",
-      qThreshold: 0.01,
+      qThreshold: 0.05,
       significantOnly: false,
     });
   });
@@ -42,18 +42,18 @@ describe("Atlas hash state", () => {
 
   it("omits default filters while preserving non-default q and significance state", () => {
     expect(serializeAtlasHash(URL_DEFAULTS)).toBe(
-      "#release=k500-2026-09-25&view=explore&mode=mutsig&display=list",
+      "#release=k500-2026-10-20&view=explore&mode=mutsig&display=list",
     );
     expect(
       serializeAtlasHash({
         ...URL_DEFAULTS,
-        qThreshold: 0.05,
+        qThreshold: 0.01,
         minIdentifiedBmrs: 2,
         minSignificantBmrs: 1,
         significantOnly: true,
       }),
     ).toBe(
-      "#release=k500-2026-09-25&view=explore&mode=mutsig&display=list&q=0.05&identify=2&sigbmrs=1&significant=1",
+      "#release=k500-2026-10-20&view=explore&mode=mutsig&display=list&q=0.01&identify=2&sigbmrs=1&significant=1",
     );
   });
 
@@ -79,7 +79,7 @@ describe("Atlas hash state", () => {
     expect(parsed).toEqual({
       ...URL_DEFAULTS,
       cohort: "TCGA__LUAD",
-      mode: "consensus",
+      mode: "mutsig",
       compareDirection: "CO",
     });
     const serialized = serializeAtlasHash(parsed);
@@ -90,7 +90,7 @@ describe("Atlas hash state", () => {
 
   it("resolves each link to the release that publishes its cohort", () => {
     expect(parseAtlasHash("#cohort=TCGA__CHOL")).toMatchObject({
-      release: "k500-2026-09-25",
+      release: "k500-2026-10-20",
       mode: "mutsig",
     });
     expect(parseAtlasHash("#cohort=MSK-IMPACT__BRCA")).toMatchObject({
@@ -100,7 +100,13 @@ describe("Atlas hash state", () => {
     expect(parseAtlasHash("#release=k100-2026-08-26&cohort=TCGA__CHOL").release).toBe(
       "k100-2026-08-26",
     );
-    expect(parseAtlasHash("#release=k999-nope").release).toBe("k500-2026-09-25");
+    expect(parseAtlasHash("#release=k999-nope").release).toBe("k500-2026-10-20");
+  });
+
+  it("preserves historical thresholds and rejects unavailable backgrounds", () => {
+    expect(parseAtlasHash("#release=k500-2026-09-25").qThreshold).toBe(0.01);
+    expect(parseAtlasHash("#mode=cbase").mode).toBe("mutsig");
+    expect(parseAtlasHash("#q=0.01").qThreshold).toBe(0.01);
   });
 
   it("supports contact and paper-faithful passenger annotations", () => {

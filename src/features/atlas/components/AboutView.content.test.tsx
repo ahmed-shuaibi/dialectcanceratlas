@@ -115,7 +115,7 @@ describe("AboutView content contract", () => {
     expect(within(release!).getByText(/MSK-IMPACT and MSK-CHORD remain/)).toBeInTheDocument();
     expect(screen.getByText(/MutSigCV2 is primary/)).toBeInTheDocument();
     expect(screen.queryByText(/CBaSE is primary/)).not.toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "K=500" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "K=500 earlier" })).toHaveAttribute("aria-checked", "true");
   });
 
   it("groups every equation with a centered visual and aligned footer", () => {

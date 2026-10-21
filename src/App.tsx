@@ -126,6 +126,7 @@ export function App() {
     setUrl({
       release: next.id,
       mode: defaultModeFor(next),
+      qThreshold: next.default_q_threshold ?? 0.01,
       cohort: study && next.studies.includes(study) ? url.cohort : undefined,
       pair: undefined,
       settings: false,

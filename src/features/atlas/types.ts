@@ -25,6 +25,9 @@ export interface ReleaseCatalogEntry {
   description: string;
   studies: string[];
   default_mode: AtlasMode;
+  available_bmrs?: Bmr[];
+  default_q_threshold?: QThreshold;
+  annotation_file?: string;
 }
 
 export interface CompactTable {
@@ -162,6 +165,7 @@ export interface BaselineRow {
 }
 
 export interface CohortData {
+  includeSameGenePairs?: boolean;
   id: string;
   drivers: string[];
   /**

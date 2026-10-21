@@ -143,7 +143,7 @@ describe("CohortChooser study-first contract", () => {
       />,
     );
 
-    expect(screen.getByRole("radio", { name: "K=500" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "K=500 earlier" })).toHaveAttribute("aria-checked", "true");
     const impact = screen.getByRole("button", { name: /MSK-IMPACT/ });
     expect(within(impact).getByText("In the K=100 release")).toBeInTheDocument();
     await user.click(impact);

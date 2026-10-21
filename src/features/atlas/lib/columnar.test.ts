@@ -280,3 +280,24 @@ describe("K=500 columnar cohorts", () => {
     expect(await gunzipIfNeeded(raw)).toBe(raw);
   });
 });
+
+
+describe("final manuscript release", () => {
+  it("loads only completed backgrounds and retains same-gene M:N pairs", async () => {
+    const { cohort, files } = fixture();
+    delete cohort.tables.cbase;
+    delete cohort.tables.dig;
+    cohort.features = ["A_M", "A_N", "C_N"];
+    const input = { ...cohort, pair_policy: { ...cohort.pair_policy, same_gene_pairs_included: true } };
+    const decoded = decodeColumnarCohortFile(input);
+    const buffers: Record<string, ArrayBuffer> = {};
+    for (const [name, record] of Object.entries(decoded.tables)) {
+      buffers[name] = await gunzipIfNeeded(files[record!.file]);
+    }
+    const data = decodeColumnarCohort(meta, decoded, buffers);
+    expect(data.models.cbase).toEqual([]);
+    expect(data.lookupPair?.("cbase", "A_M", "A_N")).toBeNull();
+    expect(data.countDirectional?.("mutsig", "ME", 0.05)).toBe(1);
+    expect(exploreResults(data, "mutsig", { qThreshold: 0.05, significantOnly: true }).map((r) => [r.ga,r.gb])).toContainEqual(["A_M","A_N"]);
+  });
+});

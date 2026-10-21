@@ -195,7 +195,7 @@ export function AboutView({
     ["Cohorts", numberFact(coverage.cohorts)],
     ["Tumors", numberFact(coverage.samples)],
     ["Gene-effect cap", `K = ${numberFact(analysis.top_k_event_features)}`],
-    ["Backgrounds", "3"],
+    ["Backgrounds", String(bundle.manifest.bmrs.length)],
     ["Call rule", `${qCutoffLabel(release)} ${analysis.fdr_threshold}`],
   ];
 
@@ -215,7 +215,7 @@ export function AboutView({
         <div className="grid gap-px overflow-hidden rounded-[28px] border border-line bg-line shadow-soft lg:grid-cols-3">
           {FORMULATION.map((step) =>
             revision && step.label === "Identify dependencies"
-              ? { ...step, caption: "One LRT per pair; ρ gives the direction. Ranked by BY q." }
+              ? { ...step, caption: `One LRT per pair; ρ gives the direction. Ranked by ${release.available_bmrs ? "LRT" : "BY q"}.` }
               : step,
           ).map((step, index) => (
             <article
@@ -246,10 +246,10 @@ export function AboutView({
           {revision ? (
             <>
               <p className="mt-3 text-lg leading-8 text-muted">
-                MutSigCV2 is primary. CBaSE gives continuity with the original release; DIG tests gene-level sensitivity.
+                {release.available_bmrs ? "This release contains the final MutSigCV2 analysis and completed comparison methods. Earlier background comparisons remain available in previous releases." : "MutSigCV2 is primary. CBaSE gives continuity with the original release; DIG tests gene-level sensitivity."}
               </p>
               <p className="mt-1 text-lg leading-8 text-muted">
-                Each background is one complete within-cohort test family. Overlap is descriptive, not a vote.
+                {release.available_bmrs ? "All 124,750 pairs among the 500 most mutated loci are tested per cohort, including same-gene M:N pairs." : "Each background is one complete within-cohort test family. Overlap is descriptive, not a vote."}
               </p>
             </>
           ) : (

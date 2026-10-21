@@ -108,10 +108,10 @@ function canonicalGenes(ga: string, gb: string): [string, string] {
   return codePointCompare(ga, gb) <= 0 ? [ga, gb] : [gb, ga];
 }
 
-function lowestRankByPair(rows: DialectRow[]): Map<string, DialectRow> {
+function lowestRankByPair(rows: DialectRow[], includeSameGenePairs = false): Map<string, DialectRow> {
   const byPair = new Map<string, DialectRow>();
   rows.forEach((row) => {
-    if (baseGene(row.ga) === baseGene(row.gb)) return;
+    if (!includeSameGenePairs && baseGene(row.ga) === baseGene(row.gb)) return;
     const key = pairKey(row.ga, row.gb);
     const prior = byPair.get(key);
     if (!prior || row.rank < prior.rank) byPair.set(key, row);
@@ -125,11 +125,11 @@ export function buildComparisonRows(
   methods: CompareMethod[],
 ): ComparisonRow[] {
   const modelRows = Object.fromEntries(
-    BMR_IDS.map((bmr) => [bmr, lowestRankByPair(data.models[bmr])]),
+    BMR_IDS.map((bmr) => [bmr, lowestRankByPair(data.models[bmr], data.includeSameGenePairs)]),
   ) as Record<Bmr, Map<string, DialectRow>>;
   const baselines = new Map<string, BaselineRow>();
   data.baselines.forEach((row) => {
-    if (baseGene(row.ga) !== baseGene(row.gb)) baselines.set(pairKey(row.ga, row.gb), row);
+    if (data.includeSameGenePairs || baseGene(row.ga) !== baseGene(row.gb)) baselines.set(pairKey(row.ga, row.gb), row);
   });
   const fallbacks = new Set(data.mutsigCbaseFallbackFeatures);
   const candidates = new Set<string>();

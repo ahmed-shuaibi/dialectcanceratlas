@@ -250,7 +250,7 @@ function consensusCandidates(data: CohortData, direction: Direction): Interactio
   const results: InteractionResult[] = [];
   for (const bmr of BMR_IDS) {
     for (const row of indexes.byModel[bmr].values()) {
-      if (row.direction !== direction || isSameBaseGene(row)) continue;
+      if (row.direction !== direction || (!data.includeSameGenePairs && isSameBaseGene(row))) continue;
       const id = resultId(direction, row.ga, row.gb);
       if (seen.has(id)) continue;
       seen.add(id);
@@ -304,7 +304,7 @@ export function modelResults(
     .filter(
       (row) =>
         row.direction === direction &&
-        !isSameBaseGene(row) &&
+        (data.includeSameGenePairs || !isSameBaseGene(row)) &&
         (!significantOnly || isSignificant(row, qThreshold)),
     )
     .map((row) => toResult(data, row));
@@ -414,7 +414,7 @@ export function findResultForMode(
 ): InteractionResult | null {
   if (mode === "consensus") {
     const result = findResult(data, selection);
-    if (!result || isSameBaseGene(result)) return null;
+    if (!result || (!data.includeSameGenePairs && isSameBaseGene(result))) return null;
     const {
       qThreshold = DEFAULT_Q_THRESHOLD,
       significantOnly = true,
@@ -427,7 +427,7 @@ export function findResultForMode(
     return result;
   }
   const row = directionRow(data, mode, selection.direction, selection.ga, selection.gb);
-  if (!row || isSameBaseGene(row)) return null;
+  if (!row || (!data.includeSameGenePairs && isSameBaseGene(row))) return null;
   const { qThreshold = DEFAULT_Q_THRESHOLD, significantOnly = true } = filter;
   if (significantOnly && !isSignificant(row, qThreshold)) return null;
   return toResult(data, row);

@@ -7,6 +7,7 @@
  * checked, and every summary is recomputed from the decoded rows.
  */
 
+import { validateFinalRelease } from "./validate-final-release.mjs";
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -328,6 +329,9 @@ function topMe(result) {
 
 export async function validateK500Release(root, releaseId) {
   const manifest = await readJson(root, "manifest.json");
+  if (manifest.analysis?.contract === "final-v5-all-pairs-chi3-by") {
+    return validateFinalRelease(root, manifest);
+  }
   validateManifest(manifest, releaseId);
   const index = await readJson(root, manifest.index_file, {
     sha256: manifest.index_sha256,

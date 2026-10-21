@@ -590,12 +590,12 @@ describe("Atlas v2 critical flow", () => {
     window.history.replaceState(null, "", "/");
     const k500Manifest = {
       ...manifest,
-      release_id: "k500-2026-09-25",
+      release_id: "k500-2026-10-20",
       schema_version: "3.0.0",
       coverage: { cohorts: 1, samples: 561 },
       analysis: {
         top_k_event_features: 500,
-        fdr_threshold: 0.01,
+        fdr_threshold: 0.05,
         fdr_operator: "<=",
         primary_provider: "mutsig",
         primary_adjustment: "benjamini-yekutieli",
@@ -608,16 +608,16 @@ describe("Atlas v2 critical flow", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         requested.push(url);
-        const k500 = url.includes("/k500-2026-09-25/");
+        const k500 = url.includes("/k500-2026-10-20/");
         if (url.endsWith("manifest.json")) return json(k500 ? k500Manifest : manifest);
         if (url.endsWith("index.json")) {
           return json(
             k500
-              ? { release_id: "k500-2026-09-25", cohorts: index.cohorts.map((item) => ({ ...item, k: 500 })) }
+              ? { release_id: "k500-2026-10-20", cohorts: index.cohorts.map((item) => ({ ...item, k: 500 })) }
               : index,
           );
         }
-        if (url.endsWith("likely-passengers-v1.json")) return json(likelyPassengers);
+        if (url.endsWith("likely-passengers.json") || url.endsWith("likely-passengers-v1.json")) return json(likelyPassengers);
         return { ok: false, status: 404, json: async () => ({}) } as Response;
       }),
     );
@@ -625,11 +625,11 @@ describe("Atlas v2 critical flow", () => {
     renderApp();
 
     expect(await screen.findByRole("heading", { name: "Choose a study." })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "K=500" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "K=500 final" })).toHaveAttribute("aria-checked", "true");
     expect(
       within(screen.getByRole("button", { name: /MSK-IMPACT/ })).getByText("In the K=100 release"),
     ).toBeInTheDocument();
-    expect(requested.some((url) => url.includes("/k500-2026-09-25/manifest.json"))).toBe(true);
+    expect(requested.some((url) => url.includes("/k500-2026-10-20/manifest.json"))).toBe(true);
 
     await user.click(screen.getByRole("radio", { name: "K=100" }));
     await waitFor(() => expect(window.location.hash).toContain("release=k100-2026-08-26"));

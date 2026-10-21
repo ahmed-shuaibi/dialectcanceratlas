@@ -178,20 +178,20 @@ const K500_BMR_SUMMARY: Record<Bmr, string> = {
   dig: "Gene-level sensitivity.",
 };
 
-export function isRevisionRelease(entry: Pick<ReleaseCatalogEntry, "schema_version">): boolean {
+export function isRevisionRelease(entry: Pick<ReleaseCatalogEntry, "schema_version" | "available_bmrs">): boolean {
   return entry.schema_version === "3.0.0";
 }
 
-export function bmrMethodsFor(entry: Pick<ReleaseCatalogEntry, "schema_version">): MethodMetadata[] {
+export function bmrMethodsFor(entry: Pick<ReleaseCatalogEntry, "schema_version" | "available_bmrs">): MethodMetadata[] {
   if (!isRevisionRelease(entry)) return Object.values(BMR_METHODS);
-  return (["mutsig", "cbase", "dig"] as const).map((bmr) => ({
+  return (["mutsig", "cbase", "dig"] as const).filter((bmr) => !entry.available_bmrs || entry.available_bmrs.includes(bmr)).map((bmr) => ({
     ...BMR_METHODS[bmr],
     summary: K500_BMR_SUMMARY[bmr],
   }));
 }
 
 export function atlasModesFor(
-  entry: Pick<ReleaseCatalogEntry, "schema_version">,
+  entry: Pick<ReleaseCatalogEntry, "schema_version" | "available_bmrs">,
 ): typeof ATLAS_MODES {
   if (!isRevisionRelease(entry)) return ATLAS_MODES;
   return [
@@ -201,19 +201,19 @@ export function atlasModesFor(
       detail: method.summary,
       href: method.href,
     })),
-    {
-      value: "consensus",
+    ...(bmrMethodsFor(entry).length > 1 ? [{
+      value: "consensus" as const,
       label: "Overlap",
       detail: "Descriptive agreement across backgrounds.",
-    },
+    }] : []),
   ];
 }
 
-export function methodsFor(entry: Pick<ReleaseCatalogEntry, "schema_version">): MethodMetadata[] {
+export function methodsFor(entry: Pick<ReleaseCatalogEntry, "schema_version" | "available_bmrs">): MethodMetadata[] {
   return [METHODS[0], ...bmrMethodsFor(entry), ...Object.values(COMPARISON_METHODS)];
 }
 
 /** How the release names its primary q and comparison, e.g. "BY q ≤" or "q <". */
-export function qCutoffLabel(entry: Pick<ReleaseCatalogEntry, "schema_version">): string {
+export function qCutoffLabel(entry: Pick<ReleaseCatalogEntry, "schema_version" | "available_bmrs">): string {
   return isRevisionRelease(entry) ? "BY q ≤" : "q <";
 }

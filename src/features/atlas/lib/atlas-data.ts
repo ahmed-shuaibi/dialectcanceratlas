@@ -82,7 +82,7 @@ export async function loadRelease(releaseId: string = DEFAULT_RELEASE_ID): Promi
     }
     const [index, likelyPassengers] = await Promise.all([
       fetchJson(`${releaseRoot(releaseId)}${relative(manifest.index_file)}`).then(decodeIndex),
-      fetchJson(LIKELY_PASSENGERS_URL).then(decodeLikelyPassengerAnnotations),
+      fetchJson(entry.annotation_file ? `${releaseRoot(releaseId)}${entry.annotation_file}` : LIKELY_PASSENGERS_URL).then(decodeLikelyPassengerAnnotations),
     ]);
     if (index.release_id !== manifest.release_id) {
       throw new Error(

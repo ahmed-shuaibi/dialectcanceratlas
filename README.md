@@ -9,9 +9,16 @@ Choose a study, then a cancer type. Explore ranked mutually exclusive and
 co-occurring interactions in one list or an interactive network, or compare
 DIALECT with Fisher, DISCOVER, MEGSA, WeSME, and WeSCO.
 
-The Atlas serves two immutable releases side by side:
+The Atlas serves three immutable releases side by side:
 
-- **`k500-2026-09-25`** (default): the manuscript revision. Every unordered pair of
+- **`k500-2026-10-20`** (default): the final manuscript results for 10,433 tumors
+  across 32 TCGA cohorts. All 124,750 pairs of the 500 most mutated loci are included
+  per cohort, including same-gene M:N pairs. MutSigCV2 is primary; the final
+  chi-square reference has 3 degrees of freedom, with BY `q ≤ 0.05` (8 ME and
+  4 CO calls). Completed Fisher, DISCOVER, MEGSA and WeSME/WeSCO scores use the same
+  locus and sample sets. The export verifies final Table S5 and the ranked network
+  and biological figure source tables. See the release `verification.json`.
+- **`k500-2026-09-25`**: the earlier revision analysis. Every unordered pair of
   the frozen 500-feature axis in each of the 32 TCGA PanCan Atlas cohorts, under
   MutSigCV2 (primary), CBaSE (continuity), and DIG (sensitivity). Each background is
   one complete within-cohort family; calls use Benjamini-Yekutieli `q ≤ cutoff`
@@ -25,6 +32,16 @@ The Atlas serves two immutable releases side by side:
 Every release file is immutable and SHA-256 verified during deployment. A separate, versioned annotation sidecar identifies the exact
 count-ranked, non-OncoKB event features that can be highlighted as likely
 passengers without modifying the published release.
+
+The final release is assembled from completed, hash-verified source tables only:
+
+```bash
+python scripts/export-final-results.py --source /path/to/dialect \
+  --manuscript /path/to/collaborator_revision_20261009_v5 \
+  --release-id k500-2026-10-20
+```
+
+This command refuses an existing release directory and does not fit models or run simulations.
 
 ## Local development
 

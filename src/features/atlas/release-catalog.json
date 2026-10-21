@@ -1,11 +1,28 @@
 {
-  "default": "k500-2026-09-25",
+  "default": "k500-2026-10-20",
   "releases": [
+    {
+      "id": "k500-2026-10-20",
+      "schema_version": "3.0.0",
+      "k": 500,
+      "label": "K=500 final",
+      "title": "Final manuscript results",
+      "description": "32 TCGA cohorts; final MutSigCV2 results and five-method comparisons. BY q \u2264 0.05.",
+      "studies": [
+        "TCGA"
+      ],
+      "default_mode": "mutsig",
+      "available_bmrs": [
+        "mutsig"
+      ],
+      "default_q_threshold": 0.05,
+      "annotation_file": "likely-passengers.json"
+    },
     {
       "id": "k500-2026-09-25",
       "schema_version": "3.0.0",
       "k": 500,
-      "label": "K=500",
+      "label": "K=500 earlier",
       "title": "Revision release",
       "description": "32 TCGA cohorts, 500 gene effects each. MutSigCV2 primary with Benjamini-Yekutieli q.",
       "studies": [

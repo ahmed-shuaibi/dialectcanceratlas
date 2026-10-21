@@ -22,3 +22,6 @@ https://:project.pages.dev/*
 
 https://:version.:project.pages.dev/*
   X-Robots-Tag: noindex
+
+/data/releases/k500-2026-10-20/*
+  Cache-Control: public, max-age=31556952, immutable
