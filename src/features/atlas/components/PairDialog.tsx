@@ -121,7 +121,7 @@ export function PairDialog(props: PairDialogProps) {
             <p className="mt-1 text-sm font-medium text-muted">
               {mode === "consensus"
                 ? `Requires ≥${minIdentifiedBmrs} identified and ≥${minSignificantBmrs} significant at ${cutoff}.`
-                : `${significantSupport} of ${support.independent} meet ${cutoff}.`}
+                : `${significantSupport} of ${release?.available_bmrs ? order.length : support.independent} meet ${cutoff}.`}
             </p>
             {passengerFeatures.length > 0 && (
               <p className="mt-4 inline-flex rounded-full bg-passenger-soft px-3 py-1.5 text-sm font-semibold text-passenger">
